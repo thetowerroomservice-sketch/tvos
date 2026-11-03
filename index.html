@@ -495,6 +495,81 @@ body.no-blur .glass,body.no-blur .nav-cap,body.no-blur .app-icon,body.no-blur .c
   will-change:transform;
 }
 
+
+/* SETUP (номер комнаты) */
+#s-setup{background:#0b0d11}
+.setup{position:relative;z-index:5;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.2vh}
+.setup h2{font-size:clamp(24px,2.8vw,38px);font-weight:700}
+.setup .hint{opacity:.55;font-size:clamp(14px,1.4vw,20px)}
+.setup .val{min-width:6ch;text-align:center;font-size:clamp(44px,6vw,84px);font-weight:700;letter-spacing:.08em;padding:.1em .5em;border-bottom:3px solid rgba(255,255,255,.35)}
+.kp-grid{display:grid;grid-template-columns:repeat(3,clamp(70px,8vw,120px));gap:1.4vh 1vw}
+.kp{height:clamp(56px,7vh,84px);border-radius:16px;background:rgba(255,255,255,.08);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:clamp(22px,2.6vw,36px);font-weight:600;cursor:pointer}
+.kp.focused,.kp:hover{background:#fff;color:#0b0d11;box-shadow:0 0 0 3px rgba(255,255,255,.3)}
+.hero-tag span:empty{display:none}
+/* исправление режима no-blur: иначе белая кнопка становится тёмной, а у иконок появляется тёмная подложка */
+body.no-blur .app-icon{background:transparent!important}
+body.no-blur .cta-pri{background:rgba(255,255,255,.92)!important;color:#111!important}
+body.no-blur .cta-pri.focused{background:#fff!important}
+body.no-blur .cta-sec{background:rgba(20,22,30,.7)!important}
+body.no-blur .cta-sec.focused{background:rgba(255,255,255,.22)!important}
+
+/* ===== ПРОИЗВОДИТЕЛЬНОСТЬ + ЕДИНОЕ LIQUID GLASS ДЛЯ ДОКА ===== */
+/* 1. Убираем лишние композитные слои на каждом элементе */
+*{-webkit-backface-visibility:visible;backface-visibility:visible}
+.foc,.icon-box,.cta{-webkit-transform:none;transform:none}
+/* 2. Размытие только у двух панелей (капсула и док), а не у 13 элементов */
+html body .icon-box,html body .cta-sec{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html body .icon-box{transition:none!important}
+html body .cta-sec{background:rgba(20,22,30,.62)}
+.inner-bg{filter:none!important}
+/* 3. Рамка фокуса иконки рисуется один раз, анимируется только прозрачность */
+.app-icon{position:relative;z-index:1}
+.app-icon::before{content:"";position:absolute;top:0;left:50%;width:78px;height:78px;margin-left:-39px;border-radius:22px;pointer-events:none;
+  box-shadow:0 0 0 3px #fff,0 0 0 8px rgba(255,255,255,.25),0 18px 40px rgba(0,0,0,.45);opacity:0;transition:opacity 200ms ease}
+.app-icon.focused::before{opacity:1}
+html body .app-icon.focused .icon-box{box-shadow:0 10px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.35)!important}
+
+/* 4. Док: одна стеклянная панель под всеми приложениями */
+.apps-grid{
+  position:relative;gap:14px;padding:16px 22px 12px;border-radius:38px;
+  background:linear-gradient(180deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.06) 100%);
+  -webkit-backdrop-filter:blur(22px) saturate(150%);backdrop-filter:blur(22px) saturate(150%);
+  border:1px solid rgba(255,255,255,.24);
+  box-shadow:0 18px 50px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(255,255,255,.1),inset 0 0 26px rgba(255,255,255,.05);
+}
+.apps-grid::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  background:linear-gradient(115deg,rgba(255,255,255,.24) 0%,rgba(255,255,255,0) 26%,rgba(255,255,255,0) 70%,rgba(255,255,255,.12) 100%);
+}
+.apps-grid::after{
+  content:"";position:absolute;left:6%;right:6%;top:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);opacity:.7;
+}
+/* Лёгкий режим: то же стекло без backdrop-filter */
+body.no-blur .apps-grid,body.no-blur .nav-cap{
+  -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.2) 0%,rgba(255,255,255,.07) 100%),rgba(16,20,32,.55)!important;
+}
+/* Узкие экраны (ТВ-браузеры часто отдают 960 px): иконки поменьше, чтобы док не вылезал */
+@media (max-width:1180px){
+  .apps-grid{gap:8px;padding:14px 14px 10px;border-radius:32px}
+  .app-icon{width:78px;flex:0 0 78px}
+  .icon-box{width:66px;height:66px;border-radius:19px}
+  .app-icon::before{width:66px;height:66px;margin-left:-33px;border-radius:19px}
+  .app-icon .label{font-size:11px}
+}
+@media (max-height:640px){
+  .hero-block{top:15%}
+  .hero-title{font-size:30px;margin-bottom:8px}
+  .hero-desc{font-size:13px;margin-bottom:14px}
+  .hero-tag{margin-bottom:8px}
+}
+@media (max-width:900px){
+  .app-icon{width:64px;flex:0 0 64px}
+  .icon-box{width:54px;height:54px;border-radius:16px}
+  .app-icon::before{width:54px;height:54px;margin-left:-27px;border-radius:16px}
+  .apps-grid{gap:6px}
+}
 </style>
 </head>
 <body>
@@ -522,7 +597,7 @@ body.no-blur .glass,body.no-blur .nav-cap,body.no-blur .app-icon,body.no-blur .c
 <div class="particle" style="left:48%;animation-duration:16s;animation-delay:1.5s;width:2px;height:2px"></div>
 <div class="particle" style="left:92%;animation-duration:18s;animation-delay:3.5s;width:3px;height:3px"></div></div>
   <div class="home-overlay"></div>
-  <div class="nav-brand">HOTEL NAME</div>
+  <div class="nav-brand" id="hotel-name">HOTEL NAME</div>
   <div class="nav-clock" id="clock">09:00</div>
 
   <div class="top-nav">
@@ -537,7 +612,7 @@ body.no-blur .glass,body.no-blur .nav-cap,body.no-blur .app-icon,body.no-blur .c
   </div>
 
   <div class="hero-block">
-    <div class="hero-tag">Номер 402 <span>KING SUITE</span></div>
+    <div class="hero-tag"><b id="room-label">Номер</b> <span id="room-type"></span></div>
     <h1 class="hero-title">Добро<br>пожаловать</h1>
     <p class="hero-desc">Управляйте номером, смотрите кино и заказывайте сервис — прямо с этого экрана.</p>
     <div class="hero-actions">
@@ -671,10 +746,24 @@ body.no-blur .glass,body.no-blur .nav-cap,body.no-blur .app-icon,body.no-blur .c
       <div class="set-row foc" data-set="lang" tabindex="0"><div class="lab">Язык</div><div class="val"><div class="lang"><span class="on" data-l="ru">RU</span><span data-l="en">EN</span></div></div></div>
       <div class="set-row foc" data-set="br" tabindex="0"><div class="lab">Яркость</div><div class="val"><div class="track"><div class="fill" id="bf"></div><div class="thumb" id="bt"></div></div></div></div>
       <div class="set-row foc" data-set="fs" tabindex="0"><div class="lab">Размер шрифта</div><div class="val" id="fv">Средний</div></div>
+      <div class="set-row foc" data-set="gfx" tabindex="0"><div class="lab">Графика</div><div class="val" id="gv">Авто</div></div>
       <div class="set-row foc" data-set="ch" tabindex="0"><div class="lab">ТВ-каналы</div><div class="val">→</div></div>
     </div>
   </div></div>
 </div>
+
+<!-- SETUP -->
+<div class="screen" id="s-setup"><div class="setup">
+  <h2>Номер комнаты</h2>
+  <div class="val" id="setup-val">—</div>
+  <div class="kp-grid" id="kp-grid">
+    <div class="kp foc" data-key="1" tabindex="0">1</div><div class="kp foc" data-key="2" tabindex="0">2</div><div class="kp foc" data-key="3" tabindex="0">3</div>
+    <div class="kp foc" data-key="4" tabindex="0">4</div><div class="kp foc" data-key="5" tabindex="0">5</div><div class="kp foc" data-key="6" tabindex="0">6</div>
+    <div class="kp foc" data-key="7" tabindex="0">7</div><div class="kp foc" data-key="8" tabindex="0">8</div><div class="kp foc" data-key="9" tabindex="0">9</div>
+    <div class="kp foc" data-key="del" tabindex="0">⌫</div><div class="kp foc" data-key="0" tabindex="0">0</div><div class="kp foc" data-key="ok" tabindex="0">OK</div>
+  </div>
+  <div class="hint">Настройка при установке. Вернуться сюда: ↑ ↑ ↓ ↓ ← → на главном экране</div>
+</div></div>
 
 <!-- STUBS -->
 <div class="screen" id="s-tv"><div class="inner"><div class="inner-c"><button class="back-btn foc" data-action="back" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Назад</button><div class="soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg><p>Скоро</p></div></div></div></div>
@@ -684,6 +773,40 @@ body.no-blur .glass,body.no-blur .nav-cap,body.no-blur .app-icon,body.no-blur .c
 <div class="toast" id="toast"></div>
 
 <script>
+/* ===== НАСТРОЙКИ (меняй тут) ===== */
+const CONFIG={
+  hotelName:'HOTEL NAME',
+  roomType:'',          // например 'KING SUITE' или '' чтобы скрыть
+  // Приложения: список пакетов Android TV по порядку, берётся первый установленный.
+  // Проверить на телевизоре: adb shell pm list packages | grep -i <имя>
+  apps:{
+    youtube:  ['com.google.android.youtube.tv','com.google.android.youtube.tvkids'],
+    netflix:  ['com.netflix.ninja'],
+    spotify:  ['com.spotify.tv.android'],
+    kinopoisk:['ru.kinopoisk.tv','com.yandex.tv.kinopoisk','ru.kinopoisk'],
+    ivi:      ['ru.ivi.client.tv','ru.ivi.client']
+  },
+  webUrls:{youtube:'https://www.youtube.com',netflix:'https://www.netflix.com',spotify:'https://open.spotify.com',kinopoisk:'https://www.kinopoisk.ru',ivi:'https://www.ivi.ru'}
+};
+const NATIVE=(typeof window.Android!=='undefined');
+function getRoom(){
+  try{ if(NATIVE){const r=window.Android.getRoom(); if(r) return r;} }catch(e){}
+  try{ return localStorage.getItem('room')||''; }catch(e){ return ''; }
+}
+function saveRoom(r){
+  try{ if(NATIVE) window.Android.setRoom(r); }catch(e){}
+  try{ localStorage.setItem('room',r); }catch(e){}
+}
+function applyRoom(){
+  const r=getRoom();
+  document.getElementById('room-label').textContent=r?('Номер '+r):'Номер не задан';
+  document.getElementById('room-type').textContent=CONFIG.roomType;
+  document.getElementById('hotel-name').textContent=CONFIG.hotelName;
+}
+let setupBuf='';
+function setupShow(){document.getElementById('setup-val').textContent=setupBuf||'—'}
+function openSetup(){setupBuf=getRoom();setupShow();go('setup')}
+
 let screen='home', fi=0, brightness=70, fontIdx=1;
 const fonts=['Мелкий','Средний','Крупный'];
 
@@ -693,7 +816,8 @@ const maps={
   service:()=>[document.querySelector('#s-service .back-btn'), ...document.querySelectorAll('#svc-grid .foc'), document.querySelector('#s-service .call-btn')],
   settings:()=>[document.querySelector('#s-settings .back-btn'), ...document.querySelectorAll('#set-list .foc')],
   tv:()=>[document.querySelector('#s-tv .back-btn')],
-  city:()=>[document.querySelector('#s-city .back-btn')]
+  city:()=>[document.querySelector('#s-city .back-btn')],
+  setup:()=>[...document.querySelectorAll('#kp-grid .foc')]
 };
 
 function list(){return maps[screen]?maps[screen]():[]}
@@ -720,6 +844,8 @@ function go(name){
     if(!el) return;
     screen=name;
     el.classList.add('active');
+    const wv=document.getElementById('live-video');
+    if(wv){ if(name==='home'){ const pr=wv.play&&wv.play(); if(pr&&pr.catch) pr.catch(()=>{}); } else if(wv.pause){ wv.pause(); } }
     document.querySelectorAll('#nav .nav-item').forEach(n=>{
       n.classList.toggle('active', n.dataset.nav===name || (name==='home'&&n.dataset.nav==='home'));
     });
@@ -739,6 +865,13 @@ function toast(t){
 function activate(el){
   if(!el) return;
   const a=el.dataset.action, n=el.dataset.nav, s=el.dataset.svc, set=el.dataset.set, app=el.dataset.app;
+  if(el.dataset.key){
+    const k=el.dataset.key;
+    if(k==='del') setupBuf=setupBuf.slice(0,-1);
+    else if(k==='ok'){ if(setupBuf){saveRoom(setupBuf);applyRoom();toast('Номер комнаты: '+setupBuf);go('home');} else toast('Введите номер'); return; }
+    else if(setupBuf.length<5) setupBuf+=k;
+    setupShow(); return;
+  }
   if(n){go(n); return}
   if(a==='back'){go('home'); return}
   if(a==='tv'){go('tv'); return}
@@ -751,9 +884,7 @@ function activate(el){
     const nm={cleaning:'Уборка',towels:'Полотенца',water:'Вода',repair:'Ремонт'};
     toast(nm[s]+' — запрос отправлен'); return;
   }
-  if(app==='youtube'){toast('Открываем YouTube…'); window.open('https://www.youtube.com',' _blank'); return}
-  if(app==='netflix'){toast('Открываем Netflix…'); window.open('https://www.netflix.com',' _blank'); return}
-  if(app==='spotify'){toast('Открываем Spotify…'); window.open('https://open.spotify.com',' _blank'); return}
+  if(app && CONFIG.apps[app]){ launchApp(app); return }
   if(app==='browser'){toast('Браузер — скоро'); return}
   if(set==='lang'){
     el.querySelectorAll('.lang span').forEach(x=>x.classList.toggle('on'));
@@ -771,8 +902,28 @@ function activate(el){
     document.getElementById('fv').textContent=fonts[fontIdx];
     toast('Размер шрифта: '+fonts[fontIdx]); return;
   }
+  if(set==='gfx'){
+    gfxPref=gfxPref==='auto'?'lite':(gfxPref==='lite'?'full':'auto');
+    try{localStorage.setItem('gfxPref',gfxPref)}catch(e){}
+    if(gfxPref==='auto'){ gfxAuto=''; try{localStorage.removeItem('gfxAuto')}catch(e){} benchGfx(); }
+    applyGfx(); toast('Графика: '+GFX_LABEL[gfxPref]); return;
+  }
   if(set==='ch'){toast('Список каналов — скоро'); return}
 }
+
+function launchApp(app){
+  const names={youtube:'YouTube',netflix:'Netflix',spotify:'Spotify',kinopoisk:'Кинопоиск',ivi:'ivi'};
+  if(NATIVE){
+    let ok=false;
+    try{ ok=window.Android.launchApp(JSON.stringify(CONFIG.apps[app])); }catch(e){}
+    toast(ok?('Открываем '+names[app]+'…'):(names[app]+' не установлен на этом телевизоре'));
+  } else {
+    toast('Открываем '+names[app]+'…'); window.open(CONFIG.webUrls[app],'_blank');
+  }
+}
+
+/* Кнопка Назад на пульте (вызывается из Android) */
+window.tvBack=function(){ if(screen==='setup' && !getRoom()) return false; if(screen!=='home'){go('home');return true} return false; };
 
 function select(){activate(list()[fi])}
 
@@ -809,18 +960,28 @@ function move(dir){
   } else if(screen==='settings'){
     if(dir==='down') n=Math.min(fi+1,len-1);
     else if(dir==='up') n=Math.max(fi-1,0);
+  } else if(screen==='setup'){
+    if(dir==='right') n=Math.min(fi+1,len-1);
+    else if(dir==='left') n=Math.max(fi-1,0);
+    else if(dir==='down') n=Math.min(fi+3,len-1);
+    else if(dir==='up') n=Math.max(fi-3,0);
   } else n=0;
   setFocus(n);
 }
 
+const SECRET=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight'];
+let seq=[];
 document.addEventListener('keydown', e=>{
   const k=e.key;
+  seq.push(k); if(seq.length>SECRET.length) seq.shift();
+  if(screen==='home' && seq.join()===SECRET.join()){ seq=[]; openSetup(); return; }
+  if(k==='GoBack'||k==='BrowserBack'||e.keyCode===4){e.preventDefault();window.tvBack();return}
   if(k==='ArrowRight'){e.preventDefault();move('right')}
   else if(k==='ArrowLeft'){e.preventDefault();move('left')}
   else if(k==='ArrowDown'){e.preventDefault();move('down')}
   else if(k==='ArrowUp'){e.preventDefault();move('up')}
   else if(k==='Enter'||k===' '){e.preventDefault();select()}
-  else if(k==='Escape'||k==='Backspace'){e.preventDefault();if(screen!=='home')go('home')}
+  else if(k==='Escape'||k==='Backspace'){e.preventDefault();window.tvBack()}
   else if(k==='h'||k==='H'||k==='Home'){e.preventDefault();go('home')}
 });
 
@@ -865,12 +1026,36 @@ function shineNav(el){
 }
 
 
-/* TV opt: less work per frame */
-const REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  || /SmartTV|TV|Web0S|Tizen|VIDAA|Viera/i.test(navigator.userAgent);
-if(REDUCE) document.body.classList.add('no-blur');
+/* Адаптивная графика: Авто замеряет FPS первые секунды и при <40 включает лёгкий режим */
+const GFX_LABEL={auto:'Авто',lite:'Лёгкая',full:'Полная'};
+let gfxPref='auto', gfxAuto='';
+try{ gfxPref=localStorage.getItem('gfxPref')||'auto'; gfxAuto=localStorage.getItem('gfxAuto')||''; }catch(e){}
+if(/[?&]lite\b/.test(location.search)) gfxPref='lite';
+if(/[?&]full\b/.test(location.search)) gfxPref='full';
+function applyGfx(){
+  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lite=gfxPref==='lite'||(gfxPref==='auto'&&(gfxAuto==='lite'||reduce));
+  document.body.classList.toggle('no-blur',lite);
+  const gv=document.getElementById('gv'); if(gv) gv.textContent=GFX_LABEL[gfxPref];
+}
+function benchGfx(){
+  if(gfxPref!=='auto'||gfxAuto) return;
+  let frames=0,t0=0;
+  function f(t){
+    if(!t0) t0=t;
+    frames++;
+    if(t-t0<3000){ requestAnimationFrame(f); return; }
+    const fps=frames*1000/(t-t0);
+    gfxAuto=fps<40?'lite':'full';
+    try{localStorage.setItem('gfxAuto',gfxAuto)}catch(e){}
+    applyGfx();
+  }
+  setTimeout(()=>requestAnimationFrame(f),1500);
+}
+applyRoom(); applyGfx(); benchGfx();
 
 setFocus(0);
+if(!getRoom()) openSetup();
 requestAnimationFrame(()=>{
   const a=document.querySelector('#nav .nav-item.active')||document.querySelector('#nav .nav-item');
   if(a){ const m=document.getElementById('navMagnet'); if(m) m.style.transition='none';
