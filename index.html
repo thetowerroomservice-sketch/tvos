@@ -749,7 +749,7 @@ body.no-blur .apps-grid,body.no-blur .nav-cap{
       <div class="set-row foc" data-set="gfx" tabindex="0"><div class="lab">Графика</div><div class="val" id="gv">Авто</div></div>
       <div class="set-row foc" data-set="ch" tabindex="0"><div class="lab">ТВ-каналы</div><div class="val">→</div></div>
     </div>
-    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 04.11-3</div>
+    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 04.11-5</div>
   </div></div>
 </div>
 
@@ -786,6 +786,12 @@ const CONFIG={
     spotify:  ['com.spotify.tv.android'],
     kinopoisk:['ru.kinopoisk.tv','com.yandex.tv.kinopoisk','ru.kinopoisk'],
     ivi:      ['ru.ivi.client.tv','ru.ivi.client']
+  },
+  // Для проверки через сайт: попытка открыть установленное приложение через Android intent (зависит от браузера телевизора)
+  webIntents:{
+    youtube:'intent://www.youtube.com/#Intent;scheme=https;package=com.google.android.youtube.tv;end',
+    netflix:'intent://www.netflix.com/#Intent;scheme=https;package=com.netflix.ninja;end',
+    spotify:'intent://open.spotify.com/#Intent;scheme=https;package=com.spotify.tv.android;end'
   },
   webUrls:{youtube:'https://www.youtube.com',netflix:'https://www.netflix.com',spotify:'https://open.spotify.com',kinopoisk:'https://www.kinopoisk.ru',ivi:'https://www.ivi.ru'}
 };
@@ -919,8 +925,14 @@ function launchApp(app){
     let ok=false;
     try{ ok=window.Android.launchApp(JSON.stringify(CONFIG.apps[app])); }catch(e){}
     toast(ok?('Открываем '+names[app]+'…'):(names[app]+' не установлен на этом телевизоре'));
+    if(ok){ const wv=document.getElementById('live-video'); if(wv&&wv.pause) wv.pause(); }
   } else {
-    toast('Открываем '+names[app]+'…'); window.open(CONFIG.webUrls[app],'_blank');
+    toast('Открываем '+names[app]+'…');
+    const it=CONFIG.webIntents[app];
+    if(it){
+      const f=document.createElement('iframe'); f.style.display='none'; f.src=it; document.body.appendChild(f);
+      setTimeout(()=>{ f.remove(); if(!document.hidden) window.open(CONFIG.webUrls[app],'_blank'); },2000);
+    } else window.open(CONFIG.webUrls[app],'_blank');
   }
 }
 
@@ -1089,6 +1101,13 @@ requestAnimationFrame(()=>{
   v.play().catch(showPoster);
 })();
 
+
+/* Когда страница скрыта (поверх другое приложение), видео стоит; на главной при возврате снова играет */
+document.addEventListener('visibilitychange',()=>{
+  const v=document.getElementById('live-video'); if(!v) return;
+  if(document.hidden){ v.pause(); }
+  else if(screen==='home'){ const pr=v.play(); if(pr&&pr.catch) pr.catch(()=>{}); }
+});
 
 /* Live wallpaper intro 5s */
 setTimeout(()=>{
