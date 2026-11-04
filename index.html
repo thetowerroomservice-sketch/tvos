@@ -603,6 +603,29 @@ body.no-blur .apps-grid,body.no-blur .nav-cap{
 .lp-dots{display:flex;justify-content:center;gap:10px;height:12px;align-items:center}
 .lp-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}
 .lp-dot.on{background:#fff}
+
+/* ===== ВЕРХНЯЯ КАПСУЛА: читаемый текст на любых обоях + плавное движение ===== */
+html body .nav-cap{
+  background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.04) 100%),rgba(14,20,34,.38);
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:0 8px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.4);
+}
+html body.no-blur .nav-cap{
+  background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.04) 100%),rgba(14,20,34,.5)!important;
+}
+/* текст всегда белый: меняется только яркость и вес */
+/* вес шрифта один для всех: иначе ширина текста прыгает и бегунок дёргается */
+html body .nav-item{color:rgba(255,255,255,.78);font-weight:600!important;text-shadow:0 1px 6px rgba(0,0,0,.4);transition:color 220ms ease!important}
+html body .nav-item.active,html body .nav-item.focused{color:#fff!important;transform:none!important}
+html body .nav-item .shine{display:none!important}
+/* бегунок: полупрозрачное стекло вместо белой плашки, одна плавная кривая без отскока */
+html body .nav-magnet{
+  background:linear-gradient(180deg,rgba(255,255,255,.38) 0%,rgba(255,255,255,.2) 100%);
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:0 4px 16px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.6);
+  transition:transform 320ms cubic-bezier(.22,.9,.3,1),width 320ms cubic-bezier(.22,.9,.3,1)!important;
+}
+html body .nav-magnet.snap{transition:transform 320ms cubic-bezier(.22,.9,.3,1),width 320ms cubic-bezier(.22,.9,.3,1)!important}
 </style>
 </head>
 <body>
@@ -654,7 +677,7 @@ body.no-blur .apps-grid,body.no-blur .nav-cap{
   </div>
 
   <div class="apps">
-    <div class="apps-label"></div>
+    <div class="apps-label">Приложения</div>
     <div class="apps-grid" id="apps">
       <!-- YouTube -->
       <div class="app-icon ic-yt foc" data-app="youtube" tabindex="0">
@@ -781,7 +804,7 @@ body.no-blur .apps-grid,body.no-blur .nav-cap{
       <div class="set-row foc" data-set="gfx" tabindex="0"><div class="lab">Графика</div><div class="val" id="gv">Авто</div></div>
       <div class="set-row foc" data-set="ch" tabindex="0"><div class="lab">ТВ-каналы</div><div class="val">→</div></div>
     </div>
-    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 04.11-7</div>
+    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 04.11-8</div>
   </div></div>
 </div>
 
