@@ -781,7 +781,7 @@ body.no-blur .apps-grid,body.no-blur .nav-cap{
       <div class="set-row foc" data-set="gfx" tabindex="0"><div class="lab">Графика</div><div class="val" id="gv">Авто</div></div>
       <div class="set-row foc" data-set="ch" tabindex="0"><div class="lab">ТВ-каналы</div><div class="val">→</div></div>
     </div>
-    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 04.11-6</div>
+    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 04.11-7</div>
   </div></div>
 </div>
 
@@ -884,13 +884,21 @@ function refreshInstalled(){
     APPS.forEach(a=>{ const p=a.pkgs.find(x=>by[x]); a.installed=!!p; a.pkg=p||null; a.icon=(p&&by[p].icon)?('data:image/png;base64,'+by[p].icon):null; });
   }catch(e){}
 }
-/* Для сайта и как запас: положи официальный логотип в icons/<id>.png (например icons/youtube.png) */
+/* Для сайта и как запас: положи логотип в icons/<id>.png или .jpg/.jpeg/.webp (например icons/youtube.jpg) */
 function probeIconFiles(){
+  const exts=['png','jpg','jpeg','webp','PNG','JPG','JPEG','WEBP'];
   APPS.forEach(a=>{
     if(a.icon||!a.installed) return;
-    const im=new Image();
-    im.onload=()=>{ a.icon='icons/'+a.id+'.png'; renderDock(); if(screen==='launchpad') renderLP(lpPage,0); };
-    im.src='icons/'+a.id+'.png';
+    let k=0;
+    const next=()=>{
+      if(k>=exts.length) return;
+      const src='icons/'+a.id+'.'+exts[k++];
+      const im=new Image();
+      im.onload=()=>{ a.icon=src; renderDock(); if(screen==='launchpad') renderLP(lpPage,0); };
+      im.onerror=next;
+      im.src=src;
+    };
+    next();
   });
 }
 function dockApps(){ return CONFIG.pinned.map(appById).filter(a=>a&&a.installed).slice(0,CONFIG.dockMax); }
