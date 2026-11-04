@@ -571,6 +571,38 @@ body.no-blur .apps-grid,body.no-blur .nav-cap{
   .app-icon::before{width:54px;height:54px;margin-left:-27px;border-radius:16px}
   .apps-grid{gap:6px}
 }
+
+/* ===== ИКОНКИ ПРИЛОЖЕНИЙ + LAUNCHPAD ===== */
+.icon-box img{width:100%;height:100%;object-fit:cover;display:block;position:relative;z-index:1}
+.has-img .icon-box{background:transparent!important;border:none!important;box-shadow:0 8px 22px rgba(0,0,0,.35)}
+.has-img .icon-box::before{display:none}
+.ic-generic .icon-box{background:linear-gradient(145deg,#4b5468,#262c3a);border-color:rgba(255,255,255,.22)}
+.ic-lp .icon-box{background:linear-gradient(145deg,#8a94a8,#4a5266);border-color:rgba(255,255,255,.3)}
+.mono{font-size:26px;font-weight:700;color:#fff;letter-spacing:.5px;position:relative;z-index:1}
+#s-launchpad{background:radial-gradient(ellipse 80% 60% at 50% 12%,#22304d 0%,#0b0f1a 62%,#070910 100%)}
+.lp{position:relative;z-index:5;height:100%;display:flex;flex-direction:column;padding:36px 48px 28px;--lp:clamp(64px,7vw,104px)}
+.lp-top{display:flex;align-items:center;justify-content:space-between}
+.lp-top .back-btn{margin-bottom:0}
+.lp-title{font-size:clamp(20px,2vw,28px);font-weight:700}
+.lp-spacer{width:110px}
+.lp-stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.lp-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4vh 1.2vw;width:min(1200px,94vw)}
+.lp-grid.slide-l{animation:lpL 260ms cubic-bezier(.2,.8,.2,1)}
+.lp-grid.slide-r{animation:lpR 260ms cubic-bezier(.2,.8,.2,1)}
+@keyframes lpL{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+@keyframes lpR{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+.lp-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0;cursor:pointer;transition:transform 220ms cubic-bezier(.2,.8,.2,1)}
+.lp-item .icon-box{width:var(--lp);height:var(--lp);border-radius:24%}
+.lp-item .icon-box svg{width:44%;height:44%}
+.lp-item .mono{font-size:clamp(22px,2.4vw,34px)}
+.lp-item::before{content:"";position:absolute;top:0;left:50%;width:var(--lp);height:var(--lp);margin-left:calc(var(--lp) / -2);border-radius:24%;pointer-events:none;
+  box-shadow:0 0 0 3px #fff,0 0 0 8px rgba(255,255,255,.25),0 18px 40px rgba(0,0,0,.45);opacity:0;transition:opacity 200ms ease}
+.lp-item.focused{transform:scale(1.1)}
+.lp-item.focused::before{opacity:1}
+.lp-item .label{font-size:clamp(12px,1.1vw,16px);color:rgba(255,255,255,.88);text-align:center;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lp-dots{display:flex;justify-content:center;gap:10px;height:12px;align-items:center}
+.lp-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}
+.lp-dot.on{background:#fff}
 </style>
 </head>
 <body>
@@ -749,9 +781,19 @@ body.no-blur .apps-grid,body.no-blur .nav-cap{
       <div class="set-row foc" data-set="gfx" tabindex="0"><div class="lab">Графика</div><div class="val" id="gv">Авто</div></div>
       <div class="set-row foc" data-set="ch" tabindex="0"><div class="lab">ТВ-каналы</div><div class="val">→</div></div>
     </div>
-    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 04.11-5</div>
+    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 04.11-6</div>
   </div></div>
 </div>
+
+<!-- LAUNCHPAD -->
+<div class="screen" id="s-launchpad"><div class="lp">
+  <div class="lp-top">
+    <button class="back-btn foc" data-action="back" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Назад</button>
+    <div class="lp-title">Все приложения</div><div class="lp-spacer"></div>
+  </div>
+  <div class="lp-stage"><div class="lp-grid" id="lp-grid"></div></div>
+  <div class="lp-dots" id="lp-dots"></div>
+</div></div>
 
 <!-- SETUP -->
 <div class="screen" id="s-setup"><div class="setup">
@@ -776,24 +818,31 @@ body.no-blur .apps-grid,body.no-blur .nav-cap{
 <script>
 /* ===== НАСТРОЙКИ (меняй тут) ===== */
 const CONFIG={
-  hotelName:'HOTEL NAME',
+  hotelName:'The Tower Hotel',
   roomType:'',          // например 'KING SUITE' или '' чтобы скрыть
-  // Приложения: список пакетов Android TV по порядку, берётся первый установленный.
+  dockMax:8,            // сколько приложений в доке, остальные уходят в «Ещё» (Launchpad)
+  pinned:['youtube','netflix','kinopoisk','allplay','okko','megogo','ivi','spotify'],   // порядок в доке
+  // pkgs: имена пакетов Android TV по порядку, берётся первый установленный.
   // Проверить на телевизоре: adb shell pm list packages | grep -i <имя>
-  apps:{
-    youtube:  ['com.google.android.youtube.tv','com.google.android.youtube.tvkids'],
-    netflix:  ['com.netflix.ninja'],
-    spotify:  ['com.spotify.tv.android'],
-    kinopoisk:['ru.kinopoisk.tv','com.yandex.tv.kinopoisk','ru.kinopoisk'],
-    ivi:      ['ru.ivi.client.tv','ru.ivi.client']
-  },
-  // Для проверки через сайт: попытка открыть установленное приложение через Android intent (зависит от браузера телевизора)
-  webIntents:{
-    youtube:'intent://www.youtube.com/#Intent;scheme=https;package=com.google.android.youtube.tv;end',
-    netflix:'intent://www.netflix.com/#Intent;scheme=https;package=com.netflix.ninja;end',
-    spotify:'intent://open.spotify.com/#Intent;scheme=https;package=com.spotify.tv.android;end'
-  },
-  webUrls:{youtube:'https://www.youtube.com',netflix:'https://www.netflix.com',spotify:'https://open.spotify.com',kinopoisk:'https://www.kinopoisk.ru',ivi:'https://www.ivi.ru'}
+  // Не проверены на реальном телевизоре: kinopoisk, allplay, okko, megogo, wink, premier, ivi, vkvideo, rutube.
+  apps:[
+    {id:'youtube',  name:'YouTube',    pkgs:['com.google.android.youtube.tv'], web:'https://www.youtube.com', intent:'intent://www.youtube.com/#Intent;scheme=https;package=com.google.android.youtube.tv;end'},
+    {id:'netflix',  name:'Netflix',    pkgs:['com.netflix.ninja'], web:'https://www.netflix.com', intent:'intent://www.netflix.com/#Intent;scheme=https;package=com.netflix.ninja;end'},
+    {id:'kinopoisk',name:'Кинопоиск',  pkgs:['ru.kinopoisk.tv','com.yandex.tv.kinopoisk','ru.kinopoisk'], web:'https://www.kinopoisk.ru'},
+    {id:'allplay',  name:'Allplay',    pkgs:['uz.allplay.app','uz.allplay.tv'], web:'https://allplay.uz'},
+    {id:'okko',     name:'Okko',       pkgs:['ru.more.play'], web:'https://okko.tv'},
+    {id:'megogo',   name:'Megogo',     pkgs:['com.megogo.application','com.megogo.tv'], web:'https://megogo.net'},
+    {id:'ivi',      name:'ivi',        pkgs:['ru.ivi.client.tv','ru.ivi.client'], web:'https://www.ivi.ru'},
+    {id:'spotify',  name:'Spotify',    pkgs:['com.spotify.tv.android'], web:'https://open.spotify.com', intent:'intent://open.spotify.com/#Intent;scheme=https;package=com.spotify.tv.android;end'},
+    {id:'wink',     name:'Wink',       pkgs:['ru.rt.video.app.tv'], web:'https://wink.ru'},
+    {id:'premier',  name:'Premier',    pkgs:['ru.premier.tv','ru.premier.android'], web:'https://premier.one'},
+    {id:'prime',    name:'Prime Video',pkgs:['com.amazon.amazonvideo.livingroom'], web:'https://www.primevideo.com'},
+    {id:'disney',   name:'Disney+',    pkgs:['com.disney.disneyplus'], web:'https://www.disneyplus.com'},
+    {id:'appletv',  name:'Apple TV',   pkgs:['com.apple.atve.androidtv.appletv'], web:'https://tv.apple.com'},
+    {id:'twitch',   name:'Twitch',     pkgs:['tv.twitch.android.app'], web:'https://www.twitch.tv'},
+    {id:'vkvideo',  name:'VK Видео',   pkgs:['com.vk.vkvideo'], web:'https://vkvideo.ru'},
+    {id:'rutube',   name:'Rutube',     pkgs:['ru.rutube.app'], web:'https://rutube.ru'}
+  ]
 };
 const NATIVE=(typeof window.Android!=='undefined');
 function getRoom(){
@@ -811,6 +860,66 @@ function applyRoom(){
   document.getElementById('room-type').textContent=CONFIG.roomType;
   document.getElementById('hotel-name').textContent=CONFIG.hotelName;
 }
+/* ===== ПРИЛОЖЕНИЯ: док + Launchpad ===== */
+const TPL={};   // иконки-шаблоны из исходной разметки дока (твои SVG)
+document.querySelectorAll('#apps .app-icon').forEach(el=>{
+  const id=el.dataset.app||el.dataset.action;
+  const cls=[...el.classList].find(c=>/^ic-/.test(c))||'ic-generic';
+  TPL[id]={cls:cls,svg:el.querySelector('.icon-box').innerHTML};
+});
+const INTERNAL=[{id:'tv',name:'ТВ'},{id:'info',name:'Отель'},{id:'service',name:'Сервис'},{id:'city',name:'Город'},{id:'settings',name:'Настройки'}];
+const APPS=CONFIG.apps.map(a=>Object.assign({installed:true,pkg:null,icon:null},a));
+const LP_COLS=7, LP_SIZE=21; let lpPage=0, lastAppRefresh=Date.now();
+function appById(id){return APPS.find(a=>a.id===id)}
+function monogram(n){return n.replace(/[^A-Za-zА-Яа-я0-9 ]/g,'').split(' ').filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+function iconInner(a){ if(a.icon) return '<img src="'+a.icon+'" alt="" draggable="false">'; if(TPL[a.id]) return TPL[a.id].svg; return '<span class="mono">'+monogram(a.name)+'</span>'; }
+function tileCls(a){ return a.icon?'has-img ic-generic':(TPL[a.id]?TPL[a.id].cls:'ic-generic'); }
+/* В приложении иконки берутся прямо из установленных на телевизоре программ (настоящие). */
+function refreshInstalled(){
+  if(!NATIVE) return;
+  try{
+    const all=[].concat.apply([],CONFIG.apps.map(a=>a.pkgs));
+    const info=JSON.parse(window.Android.getAppInfo(JSON.stringify(all)));
+    const by={}; info.forEach(i=>{by[i.pkg]=i});
+    APPS.forEach(a=>{ const p=a.pkgs.find(x=>by[x]); a.installed=!!p; a.pkg=p||null; a.icon=(p&&by[p].icon)?('data:image/png;base64,'+by[p].icon):null; });
+  }catch(e){}
+}
+/* Для сайта и как запас: положи официальный логотип в icons/<id>.png (например icons/youtube.png) */
+function probeIconFiles(){
+  APPS.forEach(a=>{
+    if(a.icon||!a.installed) return;
+    const im=new Image();
+    im.onload=()=>{ a.icon='icons/'+a.id+'.png'; renderDock(); if(screen==='launchpad') renderLP(lpPage,0); };
+    im.src='icons/'+a.id+'.png';
+  });
+}
+function dockApps(){ return CONFIG.pinned.map(appById).filter(a=>a&&a.installed).slice(0,CONFIG.dockMax); }
+function lpItems(){
+  const inDock=new Set(dockApps().map(a=>a.id));
+  return APPS.filter(a=>a.installed&&!inDock.has(a.id)).map(a=>({kind:'app',id:a.id}))
+    .concat(INTERNAL.map(i=>({kind:'int',id:i.id,name:i.name})));
+}
+function renderDock(){
+  const g=document.getElementById('apps'); if(!g) return;
+  let html='';
+  dockApps().forEach(a=>{ html+='<div class="app-icon '+tileCls(a)+' foc" data-app="'+a.id+'" tabindex="0"><div class="icon-box">'+iconInner(a)+'</div><div class="label">'+a.name+'</div></div>'; });
+  html+='<div class="app-icon ic-lp foc" data-action="launchpad" tabindex="0"><div class="icon-box"><svg viewBox="0 0 24 24" fill="#fff"><rect x="3" y="3" width="5" height="5" rx="1.3"/><rect x="9.5" y="3" width="5" height="5" rx="1.3"/><rect x="16" y="3" width="5" height="5" rx="1.3"/><rect x="3" y="9.5" width="5" height="5" rx="1.3"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.3"/><rect x="16" y="9.5" width="5" height="5" rx="1.3"/><rect x="3" y="16" width="5" height="5" rx="1.3"/><rect x="9.5" y="16" width="5" height="5" rx="1.3"/><rect x="16" y="16" width="5" height="5" rx="1.3"/></svg></div><div class="label">Ещё</div></div>';
+  g.innerHTML=html;
+  if(screen==='home') setFocus(fi);
+}
+function renderLP(page,dir){
+  const items=lpItems(), pages=Math.max(1,Math.ceil(items.length/LP_SIZE));
+  lpPage=Math.max(0,Math.min(page,pages-1));
+  const g=document.getElementById('lp-grid');
+  g.className='lp-grid'+(dir?(dir>0?' slide-l':' slide-r'):'');
+  g.innerHTML=items.slice(lpPage*LP_SIZE,(lpPage+1)*LP_SIZE).map(it=>{
+    if(it.kind==='app'){ const a=appById(it.id); return '<div class="lp-item '+tileCls(a)+' foc" data-app="'+a.id+'" tabindex="0"><div class="icon-box">'+iconInner(a)+'</div><div class="label">'+a.name+'</div></div>'; }
+    const t=TPL[it.id]||{cls:'ic-generic',svg:''};
+    return '<div class="lp-item '+t.cls+' foc" data-action="'+it.id+'" tabindex="0"><div class="icon-box">'+t.svg+'</div><div class="label">'+it.name+'</div></div>';
+  }).join('');
+  document.getElementById('lp-dots').innerHTML=pages>1?Array.from({length:pages},(_,i)=>'<span class="lp-dot'+(i===lpPage?' on':'')+'"></span>').join(''):'';
+}
+
 let setupBuf='';
 function setupShow(){document.getElementById('setup-val').textContent=setupBuf||'—'}
 function openSetup(){setupBuf=getRoom();setupShow();go('setup')}
@@ -825,7 +934,8 @@ const maps={
   settings:()=>[document.querySelector('#s-settings .back-btn'), ...document.querySelectorAll('#set-list .foc')],
   tv:()=>[document.querySelector('#s-tv .back-btn')],
   city:()=>[document.querySelector('#s-city .back-btn')],
-  setup:()=>[...document.querySelectorAll('#kp-grid .foc')]
+  setup:()=>[...document.querySelectorAll('#kp-grid .foc')],
+  launchpad:()=>[document.querySelector('#s-launchpad .back-btn'), ...document.querySelectorAll('#lp-grid .foc')]
 };
 
 function list(){return maps[screen]?maps[screen]():[]}
@@ -880,6 +990,7 @@ function activate(el){
     else if(setupBuf.length<5) setupBuf+=k;
     setupShow(); return;
   }
+  if(a==='launchpad'){ lpPage=0; renderLP(0,0); go('launchpad'); return }
   if(n){go(n); return}
   if(a==='back'){go('home'); return}
   if(a==='tv'){go('tv'); return}
@@ -892,7 +1003,7 @@ function activate(el){
     const nm={cleaning:'Уборка',towels:'Полотенца',water:'Вода',repair:'Ремонт'};
     toast(nm[s]+' — запрос отправлен'); return;
   }
-  if(app && CONFIG.apps[app]){ launchApp(app); return }
+  if(app){ launchApp(app); return }
   if(app==='browser'){toast('Браузер — скоро'); return}
   if(set==='lang'){
     el.querySelectorAll('.lang span').forEach(x=>x.classList.toggle('on'));
@@ -919,20 +1030,19 @@ function activate(el){
   if(set==='ch'){toast('Список каналов — скоро'); return}
 }
 
-function launchApp(app){
-  const names={youtube:'YouTube',netflix:'Netflix',spotify:'Spotify',kinopoisk:'Кинопоиск',ivi:'ivi'};
+function launchApp(id){
+  const a=appById(id); if(!a) return;
   if(NATIVE){
     let ok=false;
-    try{ ok=window.Android.launchApp(JSON.stringify(CONFIG.apps[app])); }catch(e){}
-    toast(ok?('Открываем '+names[app]+'…'):(names[app]+' не установлен на этом телевизоре'));
+    try{ ok=window.Android.launchApp(JSON.stringify(a.pkg?[a.pkg]:a.pkgs)); }catch(e){}
+    toast(ok?('Открываем '+a.name+'…'):(a.name+' не установлен на этом телевизоре'));
     if(ok){ const wv=document.getElementById('live-video'); if(wv&&wv.pause) wv.pause(); }
   } else {
-    toast('Открываем '+names[app]+'…');
-    const it=CONFIG.webIntents[app];
-    if(it){
-      const f=document.createElement('iframe'); f.style.display='none'; f.src=it; document.body.appendChild(f);
-      setTimeout(()=>{ f.remove(); if(!document.hidden) window.open(CONFIG.webUrls[app],'_blank'); },2000);
-    } else window.open(CONFIG.webUrls[app],'_blank');
+    toast('Открываем '+a.name+'…');
+    if(a.intent){
+      const f=document.createElement('iframe'); f.style.display='none'; f.src=a.intent; document.body.appendChild(f);
+      setTimeout(()=>{ f.remove(); if(!document.hidden) window.open(a.web,'_blank'); },2000);
+    } else window.open(a.web,'_blank');
   }
 }
 
@@ -974,6 +1084,20 @@ function move(dir){
   } else if(screen==='settings'){
     if(dir==='down') n=Math.min(fi+1,len-1);
     else if(dir==='up') n=Math.max(fi-1,0);
+  } else if(screen==='launchpad'){
+    const cnt=len-1, pages=Math.max(1,Math.ceil(lpItems().length/LP_SIZE));
+    if(fi===0){ if(dir==='down'&&cnt>0) n=1; }
+    else{
+      const t=fi-1, col=t%LP_COLS, row=Math.floor(t/LP_COLS), lastRow=Math.floor((cnt-1)/LP_COLS);
+      if(dir==='right'){
+        if(col<LP_COLS-1&&t+1<cnt) n=fi+1;
+        else if(lpPage<pages-1){ renderLP(lpPage+1,1); const c2=document.querySelectorAll('#lp-grid .foc').length; setFocus(1+Math.min(row*LP_COLS,c2-1)); return; }
+      } else if(dir==='left'){
+        if(col>0) n=fi-1;
+        else if(lpPage>0){ renderLP(lpPage-1,-1); const c2=document.querySelectorAll('#lp-grid .foc').length; setFocus(1+Math.min(row*LP_COLS+LP_COLS-1,c2-1)); return; }
+      } else if(dir==='up'){ n=row>0?fi-LP_COLS:0; }
+      else if(dir==='down'){ if(t+LP_COLS<cnt) n=fi+LP_COLS; else if(row<lastRow) n=cnt; }
+    }
   } else if(screen==='setup'){
     if(dir==='right') n=Math.min(fi+1,len-1);
     else if(dir==='left') n=Math.max(fi-1,0);
@@ -1066,6 +1190,7 @@ function benchGfx(){
   }
   setTimeout(()=>requestAnimationFrame(f),1500);
 }
+refreshInstalled(); renderDock(); probeIconFiles();
 applyRoom(); applyGfx(); benchGfx();
 
 setFocus(0);
@@ -1106,7 +1231,10 @@ requestAnimationFrame(()=>{
 document.addEventListener('visibilitychange',()=>{
   const v=document.getElementById('live-video'); if(!v) return;
   if(document.hidden){ v.pause(); }
-  else if(screen==='home'){ const pr=v.play(); if(pr&&pr.catch) pr.catch(()=>{}); }
+  else {
+    if(screen==='home'){ const pr=v.play(); if(pr&&pr.catch) pr.catch(()=>{}); }
+    if(NATIVE && Date.now()-lastAppRefresh>30000){ lastAppRefresh=Date.now(); refreshInstalled(); renderDock(); }
+  }
 });
 
 /* Live wallpaper intro 5s */
