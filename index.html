@@ -626,6 +626,9 @@ html body .nav-magnet{
   transition:transform 320ms cubic-bezier(.22,.9,.3,1),width 320ms cubic-bezier(.22,.9,.3,1)!important;
 }
 html body .nav-magnet.snap{transition:transform 320ms cubic-bezier(.22,.9,.3,1),width 320ms cubic-bezier(.22,.9,.3,1)!important}
+/* стрелками на пульте нужен только наш фокус, без мышиного курсора */
+body.keys,body.keys *{cursor:none!important}
+html,body{outline:none}
 </style>
 </head>
 <body>
@@ -804,7 +807,7 @@ html body .nav-magnet.snap{transition:transform 320ms cubic-bezier(.22,.9,.3,1),
       <div class="set-row foc" data-set="gfx" tabindex="0"><div class="lab">Графика</div><div class="val" id="gv">Авто</div></div>
       <div class="set-row foc" data-set="ch" tabindex="0"><div class="lab">ТВ-каналы</div><div class="val">→</div></div>
     </div>
-    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 04.11-8</div>
+    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 04.11-9</div>
   </div></div>
 </div>
 
@@ -1140,11 +1143,23 @@ function move(dir){
 
 const SECRET=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight'];
 let seq=[];
-document.addEventListener('keydown', e=>{
+/* Имя клавиши с запасом на старые ТВ-браузеры: у них e.key пустой, остаётся только keyCode */
+const KEYCODES={37:'ArrowLeft',38:'ArrowUp',39:'ArrowRight',40:'ArrowDown',13:'Enter',32:' ',27:'Escape',8:'Backspace',
+  4:'GoBack',166:'GoBack',461:'GoBack',10009:'GoBack',10182:'GoBack',36:'Home',172:'Home'};
+const KEYALIAS={Left:'ArrowLeft',Right:'ArrowRight',Up:'ArrowUp',Down:'ArrowDown',Select:'Enter',OK:'Enter'};
+function keyName(e){
   const k=e.key;
+  if(k && k!=='Unidentified') return KEYALIAS[k]||k;
+  return KEYCODES[e.keyCode||e.which]||'';
+}
+/* Слушаем на самом верхнем уровне (capture), чтобы страница получила стрелки раньше браузера,
+   и гасим стандартную обработку: тогда ТВ-браузер не включает свой «курсор-мышь», где это зависит от страницы */
+window.addEventListener('keydown', e=>{
+  const k=keyName(e); if(!k) return;
+  document.body.classList.add('keys');
   seq.push(k); if(seq.length>SECRET.length) seq.shift();
   if(screen==='home' && seq.join()===SECRET.join()){ seq=[]; openSetup(); return; }
-  if(k==='GoBack'||k==='BrowserBack'||e.keyCode===4){e.preventDefault();window.tvBack();return}
+  if(k==='GoBack'||k==='BrowserBack'){e.preventDefault();e.stopPropagation();window.tvBack();return}
   if(k==='ArrowRight'){e.preventDefault();move('right')}
   else if(k==='ArrowLeft'){e.preventDefault();move('left')}
   else if(k==='ArrowDown'){e.preventDefault();move('down')}
@@ -1152,7 +1167,14 @@ document.addEventListener('keydown', e=>{
   else if(k==='Enter'||k===' '){e.preventDefault();select()}
   else if(k==='Escape'||k==='Backspace'){e.preventDefault();window.tvBack()}
   else if(k==='h'||k==='H'||k==='Home'){e.preventDefault();go('home')}
-});
+}, true);
+
+/* Страница всегда в фокусе, чтобы клавиши пульта шли именно ей */
+function grabFocus(){ try{ window.focus(); document.body.setAttribute('tabindex','-1'); document.body.focus({preventScroll:true}); }catch(e){} }
+grabFocus(); window.addEventListener('load',grabFocus); document.addEventListener('click',()=>{document.body.classList.remove('keys');grabFocus()});
+document.addEventListener('keyup',e=>{ if(keyName(e)) e.preventDefault(); },true);
+/* Samsung Tizen: просим систему отдавать странице кнопки пульта */
+try{ if(window.tizen&&tizen.tvinputdevice){ ['MediaPlay','MediaPause','MediaStop'].forEach(k=>{try{tizen.tvinputdevice.registerKey(k)}catch(e){}}); } }catch(e){}
 
 document.addEventListener('click', e=>{
   const el=e.target.closest('.foc');
