@@ -790,6 +790,7 @@ body.no-blur .cc-mod{background:rgba(70,78,102,.9)}
 .wall-tile{position:relative;border-radius:14px;overflow:hidden;cursor:pointer;aspect-ratio:16/9;background:linear-gradient(135deg,#1c2638,#0d1119);border:2px solid transparent;transition:border-color .2s ease,box-shadow .2s ease}
 @supports not (aspect-ratio:16/9){.wall-tile{height:92px}}
 .wall-tile .th{position:absolute;inset:0;background-size:cover;background-position:center}
+.wall-tile .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:300;color:rgba(255,255,255,.35)}
 .wall-tile .nm{position:absolute;left:10px;bottom:8px;font-size:12px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.7);z-index:2}
 .wall-tile .ck{position:absolute;top:7px;right:7px;width:22px;height:22px;border-radius:50%;background:#0a84ff;display:none;align-items:center;justify-content:center;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .wall-tile .ck svg{width:12px;height:12px}
@@ -1013,7 +1014,7 @@ html body .apps{padding-bottom:30px}
         <div class="ios-row foc" data-set="ch" tabindex="0"><div class="ios-ic" style="background:#30b0c7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M9 21h6"/></svg></div><div class="ios-lab">ТВ-каналы</div><div class="ios-chev" style="margin-left:auto">›</div></div>
       </div>
     </div>
-    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 11.11-9</div>
+    <div style="opacity:.35;font-size:13px;margin-top:16px">Версия 11.11-11</div>
   </div></div>
 </div>
 
@@ -1718,7 +1719,7 @@ function ccActivate(){
   if(c==='settings'){ closeCC(); go('settings'); return; }
   if(c==='sleep'){ closeCC(); sleepOn(); return; }
   if(c==='reload'){ location.reload(); return; }
-  if(c==='info'){ const r=getRoom(); toast('The Tower Hotel · Версия 11.11-9'+(r?' · Номер '+r:'')); return; }
+  if(c==='info'){ const r=getRoom(); toast('The Tower Hotel · Версия 11.11-11'+(r?' · Номер '+r:'')); return; }
 }
 function ccKey(k){
   if(ccAdj){
@@ -1872,6 +1873,9 @@ setInterval(()=>{ if(screen==='home'&&!ccOpen&&!sleeping&&!document.hidden) wxAn
 let wpList=[{id:'std',name:'Стандартные',src:'live-wallpaper.mp4'}];
 let wpId='std', wpAuto=0, wpPlays=0;
 const wpThumbs={};
+try{ Object.assign(wpThumbs,JSON.parse(localStorage.getItem('wpth')||'{}')); }catch(e){}
+function wpThumbSave(){ try{ localStorage.setItem('wpth',JSON.stringify(wpThumbs)); }catch(e){} }
+function wpThumbReady(id,d){ wpThumbs[id]=d; if(screen==='wall') renderWall(); }
 try{ wpId=localStorage.getItem('wp')||'std'; wpAuto=parseInt(localStorage.getItem('wpAuto'))||0; }catch(e){}
 const WP_AUTO_LBL=['Выкл.','После 1 повтора','После 2 повторов'];
 function wpById(id){ return wpList.find(w=>w.id===id); }
@@ -1892,8 +1896,16 @@ function wpApply(id,silent){
   const v=document.getElementById('live-video');
   if(v){ v.src=w.src; v.load(); if(screen==='home'&&!document.hidden&&!ccOpen&&!sleeping){ const p=v.play(); if(p&&p.catch)p.catch(()=>{}) } }
   wpLoop(); wpLabels();
+  clearTimeout(window._wpWd); window._wpWd=setTimeout(()=>{ if(v&&v.paused===false&&v.readyState<3&&screen==='home') wpFail(id); },12000);
   document.querySelectorAll('#wall-grid .wall-tile').forEach(t=>t.classList.toggle('cur',t.dataset.wp===wpId));
   if(!silent) toast('Обои: '+w.name);
+}
+function wpFail(id){
+  const w=wpById(id); toast('Обои не воспроизводятся: '+(w?w.name:id)+' (формат/размер)');
+  if(w) w._bad=1;
+  const nx=wpList.find(x=>!x._bad&&x.id!==id);
+  if(nx&&wpAuto>0) wpApply(nx.id,true);
+  else if(wpId!=='std'){ wpId='std'; const v=document.getElementById('live-video'); if(v){ v.src='live-wallpaper.mp4'; v.load(); const p=v.play(); if(p&&p.catch)p.catch(()=>{}); } wpLabels(); }
 }
 function cycleWpAuto(d){
   wpAuto=(wpAuto+d+3)%3;
@@ -1903,6 +1915,7 @@ function cycleWpAuto(d){
 }
 (function(){
   const v=document.getElementById('live-video'); if(!v) return;
+  v.addEventListener('error',()=>{ if(wpId!=='std') wpFail(wpId); });
   v.addEventListener('ended',()=>{
     wpPlays++;
     if(wpAuto>0&&wpPlays>=wpAuto&&wpList.length>1){
@@ -1915,6 +1928,10 @@ function cycleWpAuto(d){
 (function probeWp(){
   let i=1;
   function next(){
+    if(window.Android&&window.Android.listWallpapers){
+      try{ JSON.parse(window.Android.listWallpapers()).forEach(n=>wpList.push({id:String(n),name:'Обои '+n,src:'wallpapers/'+n+'.mp4'})); }catch(e){}
+      wpDone(); return;
+    }
     if(i>10){ wpDone(); return; }
     const n=i++; const t=document.createElement('video');
     t.preload='metadata'; t.muted=true;
@@ -1926,14 +1943,18 @@ function cycleWpAuto(d){
     if(wpId!=='std'&&!wpById(wpId)){ wpId='std'; }
     if(wpId!=='std') wpApply(wpId,true); else { wpLoop(); wpLabels(); }
     if(screen==='wall') renderWall();
+    if(window.Android&&window.Android.requestWallpaperThumbs){ try{ window.Android.requestWallpaperThumbs(); }catch(e){} }
+    else setTimeout(()=>{ try{ wpThumbQueueBg(); }catch(e){} },4000);
   }
   afterBoot(next,1200);
 })();
 function renderWall(){
   const g=document.getElementById('wall-grid'); if(!g) return;
   g.innerHTML=wpList.map(w=>{
-    const th=wpThumbs[w.id]?'<div class="th" style="background-image:url('+wpThumbs[w.id]+')"></div>':'';
-    return '<div class="wall-tile'+(w.id===wpId?' cur':'')+' foc" data-wp="'+w.id+'" tabindex="0">'+th+
+    const h=(parseInt(w.id,10)||0)*47%360;
+    const img=wpThumbs[w.id]||('wallpapers/'+w.id+'.jpg');
+    const th='<div class="th" style="background-image:url('+img+')"></div>';
+    return '<div class="wall-tile'+(w.id===wpId?' cur':'')+' foc" data-wp="'+w.id+'" tabindex="0" style="background:linear-gradient(135deg,hsl('+h+',38%,34%),hsl('+((h+40)%360)+',42%,14%))"><div class="num">'+w.id+'</div>'+th+
       '<div class="nm">'+w.name+'</div><div class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"><path d="M4.5 12.5l5 5L19.5 7"/></svg></div></div>';
   }).join('');
   wpLabels();
@@ -1941,21 +1962,22 @@ function renderWall(){
   wpThumbQueue();
 }
 let _thBusy=false;
+function wpThumbQueueBg(){ window._thBg=1; wpThumbQueue(); }
 function wpThumbQueue(){
-  if(_thBusy) return;
+  if(_thBusy||window.Android) return;
   const w=wpList.find(x=>!wpThumbs[x.id]&&!x._thFail);
-  if(!w||screen!=='wall') return;
+  if(!w||(screen!=='wall'&&!window._thBg)) return;
   _thBusy=true;
   const t=document.createElement('video');
   t.preload='auto'; t.muted=true;
   let fin=false;
-  const done=ok=>{ if(fin) return; fin=true; _thBusy=false; try{t.removeAttribute('src');t.load()}catch(e){} if(!ok) w._thFail=1; if(screen==='wall'){ renderWall(); } };
+  const done=ok=>{ if(fin) return; fin=true; _thBusy=false; try{t.removeAttribute('src');t.load()}catch(e){} if(!ok) w._thFail=1; if(screen==='wall'){ renderWall(); } else if(window._thBg){ setTimeout(wpThumbQueue,200); } };
   const draw=()=>{
     try{
       const c=document.createElement('canvas'); c.width=320; c.height=180;
       c.getContext('2d').drawImage(t,0,0,320,180);
       const d=c.toDataURL('image/jpeg',0.62);
-      if(d&&d.length>400){ wpThumbs[w.id]=d; done(true); } else done(false);
+      if(d&&d.length>400){ wpThumbs[w.id]=d; wpThumbSave(); done(true); } else done(false);
     }catch(e){ done(false); }
   };
   t.addEventListener('loadeddata',()=>{
